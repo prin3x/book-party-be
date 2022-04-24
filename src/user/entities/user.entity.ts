@@ -1,10 +1,14 @@
+import { Join } from 'join/entities/join.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+
+export const USER_TABLE = 'user';
 
 @Entity()
 export class User {
@@ -17,10 +21,10 @@ export class User {
   @Column({ nullable: true })
   email: string;
 
-  @Column()
+  @Column({ select: false })
   password: string;
 
-  @Column()
+  @Column({ select: false })
   provider: string;
 
   @CreateDateColumn()
@@ -28,4 +32,7 @@ export class User {
 
   @UpdateDateColumn()
   updatedDate: Date;
+
+  @OneToMany(() => Join, (_joinEntity) => _joinEntity.userId)
+  joinDetail: Join[];
 }

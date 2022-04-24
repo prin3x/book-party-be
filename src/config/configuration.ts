@@ -13,4 +13,9 @@ export default (): any => ({
     jwtSecret: process.env.JWT_SECRET,
     saltRound: process.env.BCRYPT_SALT,
   },
+  cloudinary: {
+    cloudName: process.env.CLD_CLOUD_NAME,
+    apiKey: process.env.CLD_API_KEY,
+    apiSecret: process.env.CLD_API_SECRET
+  }
 });

@@ -52,7 +52,15 @@ export class UserService {
     let targetUser;
     try {
       targetUser = await this.findOneByUsername(user.username);
-      await bcrypt.compare(targetUser.password, user.password);
+
+      
+      if(!targetUser) return false;
+      
+      const isMatch = await bcrypt.compare(user.password, targetUser.password);
+      
+      if(isMatch) return true;
+
+      return false;
     } catch (e) {
       console.log(e);
     }

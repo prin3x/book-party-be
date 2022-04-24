@@ -7,6 +7,12 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
+import { EventsModule } from 'events/events.module';
+import { PartyModule } from './party/party.module';
+import { Party } from 'party/entities/party.entity';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { JoinModule } from './join/join.module';
+import { Join } from 'join/entities/join.entity';
 
 @Module({
   imports: [
@@ -22,11 +28,15 @@ import { AuthModule } from './auth/auth.module';
         password: configService.get('database.password'),
         database: configService.get('database.database'),
         synchronize: true,
-        entities: [User],
+        entities: [User, Party, Join],
       }),
     }),
     UserModule,
     AuthModule,
+    EventsModule,
+    PartyModule,
+    CloudinaryModule,
+    JoinModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotAcceptableException,
   UnauthorizedException,
@@ -6,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'user/user.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -43,8 +45,17 @@ export class AuthService {
   async login(user: any) {
     let payload: any;
     try {
-      await this.userService.login(user);
-      payload = { username: user.username, sub: user.userId };
+      const targetUser = await this.userService.findOneByUsername(
+        user.username,
+      );
+      if (targetUser) {
+        const isMatch: boolean = await bcrypt.compare(user.password, targetUser.password);
+        if (!isMatch)
+          throw new BadRequestException(
+            'Please Check Your Username And Password',
+          );
+        payload = { username: user.username, id: targetUser.id };
+      }
     } catch (e) {
       throw new UnauthorizedException('Unable to login');
     }
