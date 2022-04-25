@@ -14,7 +14,9 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { JoinModule } from './join/join.module';
 import { Join } from 'join/entities/join.entity';
 import { WinstonModule } from 'nest-winston';
+import { NotificationModule } from './notification/notification.module';
 import * as winston from 'winston';
+import { Notification } from 'notification/entities/notification.entity';
 
 @Module({
   imports: [
@@ -39,7 +41,7 @@ import * as winston from 'winston';
         password: configService.get('database.password'),
         database: configService.get('database.database'),
         synchronize: true,
-        entities: [User, Party, Join],
+        entities: [User, Party, Join, Notification],
       }),
     }),
     UserModule,
@@ -48,6 +50,7 @@ import * as winston from 'winston';
     PartyModule,
     CloudinaryModule,
     JoinModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,4 +1,5 @@
 import { Join } from 'join/entities/join.entity';
+import { Notification } from 'notification/entities/notification.entity';
 import {
   Column,
   CreateDateColumn,
@@ -38,4 +39,7 @@ export class User {
 
   @OneToMany(() => Join, (_joinEntity) => _joinEntity.userId)
   joinDetail: Join[];
+
+  @OneToMany(() => Notification, (_notification) => _notification.userDetail)
+  notificationDetail: Join[];
 }

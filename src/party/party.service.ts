@@ -74,7 +74,7 @@ export class PartyService {
         });
       }
 
-      query.orderBy(`${PARTY_TABLE}.createdDate`, 'ASC');
+      query.orderBy(`${PARTY_TABLE}.createdDate`, 'DESC');
       query.skip(opt.skip).take(opt.limit);
 
       res = await query.getManyAndCount();
