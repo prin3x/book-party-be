@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import {
   MessageBody,
   OnGatewayConnection,
@@ -7,36 +8,39 @@ import {
   WebSocketServer,
   WsResponse,
 } from '@nestjs/websockets';
+import { PartyService } from 'party/party.service';
 import { from, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
   cors: {
-    origin: 'http://127.0.0.1:3000',
+    origin: 'http://localhost:3000',
     methods: ['GET', 'POST'],
     transports: ['websocket', 'polling'],
     credentials: true,
   },
-  allowEIO3: true
+  allowEIO3: true,
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  private logger = new Logger(EventsGateway.name)
+  constructor(private partyService: PartyService){}
   @WebSocketServer()
   server: Server;
 
   handleDisconnect(client: any) {
-    console.log('Gateway Disconnect...');
+    // console.log('Gateway Disconnect...');
   }
   handleConnection(client: Socket, query) {
-    console.log('Gateway Connected..', query);
+    // this.logger.verbose('Connecting...')
   }
 
-  @SubscribeMessage('msgtoServer')
+  @SubscribeMessage('clientEvent')
   findAll(@MessageBody() data: any): WsResponse<string> {
     return { event: 'msgtoServer', data: 'RTers' };
   }
 
-  @SubscribeMessage('identity')
+  @SubscribeMessage('userJoinParty')
   async identity(@MessageBody() data: number): Promise<number> {
     return data;
   }

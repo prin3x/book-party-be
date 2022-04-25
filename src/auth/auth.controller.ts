@@ -20,8 +20,8 @@ export class AuthController {
   }
 
   @Post('/register')
-  userRegister(@Body() user) {
-    return this.authService.register(user);
+  async userRegister(@Body() user) {
+    return await this.authService.register(user);
   }
 
   @Get('/checkauth')

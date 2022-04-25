@@ -13,18 +13,21 @@ export const USER_TABLE = 'user';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
-  id: number;
+  id: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 20 })
   username: string;
 
   @Column({ nullable: true })
   email: string;
 
-  @Column({ select: false })
+  @Column({ type: 'int', default: 0.1 })
+  acceptVersion: number;
+
+  @Column({ type: 'varchar' })
   password: string;
 
-  @Column({ select: false })
+  @Column({ type: 'varchar' })
   provider: string;
 
   @CreateDateColumn()

@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
@@ -10,12 +14,16 @@ import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UserService {
+  private logger = new Logger(UserService.name);
   constructor(
     @InjectRepository(User) private repo: Repository<User>,
     private configService: ConfigService,
     private jwtService: JwtService,
-  ) {}
-  async create(user) {
+  ) {}o
+  async create(user: CreateUserDto)  {
+    this.logger.log(
+      `fn => ${this.create.name}, username: ${user.username}`,
+    );
     let payload: string = '';
     let res;
     try {
@@ -29,15 +37,16 @@ export class UserService {
       set.provider = 'standard';
       res = await this.repo.save(set);
 
-      payload = this.jwtService.sign(
+      payload = await this.jwtService.sign(
         { username: user.username, id: res.id },
         { privateKey: this.configService.get<string>('jwt.jwtSecret') },
       );
+
+      return payload;
     } catch (e) {
-      console.log(e);
+      this.logger.error(e);
       throw new InternalServerErrorException('Please try again');
     }
-    return 'This action adds a new user';
   }
 
   findAll() {
@@ -53,21 +62,25 @@ export class UserService {
     try {
       targetUser = await this.findOneByUsername(user.username);
 
-      
-      if(!targetUser) return false;
-      
+      if (!targetUser) return false;
+
       const isMatch = await bcrypt.compare(user.password, targetUser.password);
-      
-      if(isMatch) return true;
+
+      if (isMatch) return true;
 
       return false;
     } catch (e) {
+      this.logger.error(e);
       console.log(e);
     }
   }
 
   async findOneByUsername(username: string) {
-    return await this.repo.findOne({ username: username });
+    return await this.repo.findOne({
+      where: {
+        username,
+      },
+    });
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {

@@ -21,24 +21,24 @@ export const JOIN_TABLE = 'join';
 @Entity()
 export class Join {
   @PrimaryGeneratedColumn()
-  id: number;
+  id: string;
 
   @Column({ default: EJoinStatus.ACTIVE })
   status: EJoinStatus;
 
-  @Column()
+  @Column({ type: 'int' })
   userId: number;
 
-  @Column()
+  @Column({ type: 'int' })
   partyId: number;
 
   @Column({ default: 1 })
   totalGuest: number;
 
-  @Column()
+  @Column({ type: 'int' })
   createdBy: number;
 
-  @Column()
+  @Column({ type: 'int' })
   updatedBy: number;
 
   @CreateDateColumn()

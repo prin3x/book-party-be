@@ -21,18 +21,18 @@ export enum EPartyStatus {
 @Entity()
 export class Party {
   @PrimaryGeneratedColumn()
-  id: number;
+  id: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   coverImage: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   title: string;
 
   @Column()
   capacity: number;
 
-  @Column()
+  @Column({ type: 'varchar' })
   description: string;
 
   @Column()
@@ -41,19 +41,19 @@ export class Party {
   @Column()
   startDate: Date;
 
-  @Column()
+  @Column({ type: 'int' })
   duration: number;
 
   @Column({ default: 0 })
   joined: number;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   joinedBy: number;
 
-  @Column()
+   @Column({ type: 'int' })
   createdBy: number;
 
-  @Column()
+   @Column({ type: 'int' })
   updatedBy: number;
 
   @CreateDateColumn()
@@ -69,5 +69,3 @@ export class Party {
   @OneToMany(() => Join, (_joinEntity) => _joinEntity.partyDetail)
   joinDetail: Join[];
 }
-
-

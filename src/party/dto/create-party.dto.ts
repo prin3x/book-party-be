@@ -16,9 +16,5 @@ export class CreatePartyDTO {
   @IsNumberString()
   duration: number;
 
-  createdById: number;
-
-  updatedById: number;
-
   file: Express.Multer.File;
 }

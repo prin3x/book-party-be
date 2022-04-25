@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  Param,
+  Patch,
   Post,
   Query,
   UploadedFile,
@@ -13,6 +15,7 @@ import { AuthPayload, IAuthPayload } from 'auth/auth.decorator';
 import { JwtAuthGuard } from 'auth/jwt-auth-guard';
 import { CreatePartyDTO } from './dto/create-party.dto';
 import { PartyQueryParamsDTO } from './dto/find-party.dto';
+import { UpdatePartyDTO } from './dto/update-party.dto';
 import { PartyService } from './party.service';
 
 @UseGuards(JwtAuthGuard)
@@ -23,6 +26,14 @@ export class PartyController {
   @Get('/all')
   async findAllPossible() {
     return await this.partyService.findWithRelations();
+  }
+
+  @Get('/single/:id')
+  async findOneById(
+    @Param('id') id: string,
+    @AuthPayload() authPayload: IAuthPayload,
+  ) {
+    return await this.partyService.findOneByIdFromOwner(id, authPayload);
   }
 
   @Get('/')
@@ -42,15 +53,30 @@ export class PartyController {
     @AuthPayload() authPayload: IAuthPayload,
   ) {
     createPartyDTO.file = file;
-    createPartyDTO.createdById = authPayload.id;
-    createPartyDTO.updatedById = authPayload.id;
 
-    return await this.partyService.create(createPartyDTO);
+    return await this.partyService.create(createPartyDTO, authPayload);
   }
 
   @Post('/upload')
   @UseInterceptors(FileInterceptor('image'))
   async uploadImageToCloudinary(@UploadedFile() file: Express.Multer.File) {
     return await this.partyService.uploadImageToCloudinary(file);
+  }
+
+  @Patch('/update/:id')
+  @UseInterceptors(FileInterceptor('image'))
+  async updateParty(
+    @UploadedFile() file: Express.Multer.File,
+    @Param('id') id: string,
+    @Body() updatePartyDTO: CreatePartyDTO,
+    @AuthPayload() authPayload: IAuthPayload,
+  ) {
+    const set: UpdatePartyDTO = {...updatePartyDTO} as UpdatePartyDTO;
+    if (file) {
+      set.file = file;
+    }
+    set.id = id;
+
+    return await this.partyService.update(set, authPayload);
   }
 }

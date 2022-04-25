@@ -13,10 +13,21 @@ import { Party } from 'party/entities/party.entity';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { JoinModule } from './join/join.module';
 import { Join } from 'join/entities/join.entity';
+import { WinstonModule } from 'nest-winston';
+import * as winston from 'winston';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
+    WinstonModule.forRoot({
+      format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json()
+      ),
+      transports: [
+        new winston.transports.Console()
+      ],
+    }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

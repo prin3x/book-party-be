@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IAuthPayload } from 'auth/auth.decorator';
 import { PartyService } from 'party/party.service';
@@ -9,6 +9,7 @@ import { EJoinStatus, Join } from './entities/join.entity';
 
 @Injectable()
 export class JoinService {
+  private logger = new Logger(JoinService.name);
   constructor(
     @InjectRepository(Join) private repo: Repository<Join>,
     private partyService: PartyService,
@@ -30,7 +31,7 @@ export class JoinService {
 
     const set: Join = new Join();
 
-    set.partyId = joinRoomDTO.partyId;
+    set.partyId = +joinRoomDTO.partyId;
     set.totalGuest = joinRoomDTO.totalGuest;
     set.userId = authPayload.id;
     set.createdBy = authPayload.id;
@@ -40,6 +41,7 @@ export class JoinService {
       await this.partyService.joinParty(joinRoomDTO, authPayload);
       res = await this.repo.save(set);
     } catch (e) {
+      this.logger.error(e);
       throw new BadRequestException(e);
     }
 
@@ -68,10 +70,9 @@ export class JoinService {
 
       targetJoin.status = EJoinStatus.DISABLED;
 
-      console.log(targetJoin, 'targetJoin');
-
       res = await this.repo.save(targetJoin);
     } catch (e) {
+      this.logger.error(e);
       throw new BadRequestException(e);
     }
 
