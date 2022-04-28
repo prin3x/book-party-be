@@ -1,7 +1,10 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthPayload, IAuthPayload } from 'auth/auth.decorator';
 import { JwtAuthGuard } from 'auth/jwt-auth-guard';
-import { INotificationOperation } from './dto/find-notication.dto';
+import {
+  INotificationOperation,
+  NotificationQueryParamsDTO,
+} from './dto/find-notication.dto';
 import { Notification } from './entities/notification.entity';
 import { NotificationService } from './notification.service';
 
@@ -12,13 +15,19 @@ export class NotificationController {
 
   @Get('/')
   async findMyNoti(
+    @Query() q: NotificationQueryParamsDTO,
     @AuthPayload() authPayload: IAuthPayload,
   ): Promise<Notification[]> {
     const createNotificationDto: INotificationOperation =
-      {} as INotificationOperation;
+      this.notificationService.parseQueryString(q);
     return await this.notificationService.findAll(
       createNotificationDto,
       authPayload,
     );
+  }
+
+  @Post('/')
+  async updateSeeStatus(@AuthPayload() authPayload: IAuthPayload) {
+    return await this.notificationService.updateSeen(authPayload);
   }
 }

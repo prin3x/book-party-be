@@ -71,7 +71,7 @@ export class UserService {
       return false;
     } catch (e) {
       this.logger.error(e);
-      console.log(e);
+      throw e;
     }
   }
 

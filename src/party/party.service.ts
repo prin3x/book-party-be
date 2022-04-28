@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IAuthPayload } from 'auth/auth.decorator';
 import { ICloundModel } from 'cloudinary/cloudinary.interface';
@@ -12,7 +12,7 @@ import { CreatePartyDTO } from './dto/create-party.dto';
 import { IPartyOperation, PartyQueryParamsDTO } from './dto/find-party.dto';
 import { UpdatePartyDTO } from './dto/update-party.dto';
 import { EPartyStatus, Party } from './entities/party.entity';
-import { compareAsc } from 'date-fns';
+import { compareAsc, parseISO } from 'date-fns';
 
 export const PARTY_TABLE = 'party';
 
@@ -50,7 +50,7 @@ export class PartyService {
       res = item;
     } catch (e) {
       this.logger.error(e);
-      throw new BadRequestException('Unable to find this party');
+      throw e;
     }
     return res;
   }
@@ -79,8 +79,122 @@ export class PartyService {
 
       res = await query.getManyAndCount();
     } catch (error) {
-      this.logger.error(error);
-      throw new BadRequestException('Error Query');
+      this.logger.error(error)
+      throw error
+    }
+
+    items = res?.[0];
+
+    if (items?.[0]) {
+      items = items.map((_item) => {
+        const isOwner = _item.createdBy === authPayload.id;
+        const isJoined = _item.joinDetail.some(
+          (_el) =>
+            _el.userId === authPayload.id &&
+            _el.status !== EJoinStatus.DISABLED,
+        );
+        _item.isJoined = isJoined ? true : false;
+        _item.isOwner = isOwner ? true : false;
+
+        return _item;
+      });
+    }
+
+    const rtn = {
+      items,
+      itemCount: res?.[0]?.length,
+      total: res?.[1],
+      page: opt.page || 1,
+    };
+
+    return rtn;
+  }
+
+  async findOwnedParty(opt: IPartyOperation, authPayload: IAuthPayload) {
+    this.logger.log(`fn => ${this.findOwnedParty.name}, By: ${authPayload.id}`);
+    let res;
+    let items;
+    try {
+      const query = this.repo
+        .createQueryBuilder(PARTY_TABLE)
+        .leftJoinAndSelect(`${PARTY_TABLE}.userDetail`, `${USER_TABLE}`)
+        .where(`${PARTY_TABLE}.title Like :search`, {
+          search: `%${opt.search}%`,
+        })
+        .andWhere(`${PARTY_TABLE}.createdBy = :createdBy`, {
+          createdBy: authPayload.id,
+        });
+
+      if (opt.startDate) {
+        query.andWhere(`${PARTY_TABLE}.startDate > :startDate`, {
+          startDate: opt.startDate,
+        });
+      }
+
+      query.orderBy(`${PARTY_TABLE}.createdDate`, 'DESC');
+      query.skip(opt.skip).take(opt.limit);
+
+      res = await query.getManyAndCount();
+    } catch (error) {
+      this.logger.error(error)
+      throw error
+    }
+
+    items = res?.[0];
+
+    if (items?.[0]) {
+      items = items.map((_item) => {
+        _item.isOwner = true;
+
+        return _item;
+      });
+    }
+
+    const rtn = {
+      items,
+      itemCount: res?.[0]?.length,
+      total: res?.[1],
+      page: opt.page || 1,
+    };
+
+    return rtn;
+  }
+
+  async findJoinedParty(opt: IPartyOperation, authPayload: IAuthPayload) {
+    this.logger.log(
+      `fn => ${this.findJoinedParty.name}, By: ${authPayload.id}`,
+    );
+    let res;
+    let items;
+    try {
+      const query = this.repo
+        .createQueryBuilder(PARTY_TABLE)
+        .leftJoinAndSelect(`${PARTY_TABLE}.userDetail`, `${USER_TABLE}`)
+        .innerJoinAndSelect(
+          `${PARTY_TABLE}.joinDetail`,
+          `${JOIN_TABLE}`,
+          `${JOIN_TABLE}.userId = ${authPayload.id}`,
+        )
+        .where(`${PARTY_TABLE}.title Like :search`, {
+          search: `%${opt.search}%`,
+        })
+        .andWhere(`${JOIN_TABLE}.status = :status`, {
+          status: `${EJoinStatus.ACTIVE}`,
+        });
+
+      if (opt.startDate) {
+        query.andWhere(`${PARTY_TABLE}.startDate > :startDate`, {
+          startDate: opt.startDate,
+        });
+      }
+
+      query.orderBy(`${PARTY_TABLE}.createdDate`, 'DESC');
+      query.skip(opt.skip).take(opt.limit);
+
+      res = await query.getManyAndCount();
+    } catch (error) {
+      this.logger.error(error)
+      throw error
     }
 
     items = res?.[0];
@@ -119,6 +233,11 @@ export class PartyService {
         createPartyDto.file,
       );
 
+
+      if (compareAsc(parseISO(createPartyDto.startDate.toString()), new Date()) < 0) {
+        throw new HttpException('Cannot create event in the past', HttpStatus.CONFLICT);
+      }
+
       const set = new Party();
       set.title = createPartyDto.title;
       set.status = EPartyStatus.ENABLED;
@@ -132,7 +251,8 @@ export class PartyService {
 
       res = this.repo.save(set);
     } catch (error) {
-      throw new BadRequestException('Unable to create event');
+      this.logger.error(error)
+      throw error
     }
 
     return res;
@@ -168,7 +288,8 @@ export class PartyService {
 
       res = await this.repo.save(targetParty);
     } catch (error) {
-      throw new BadRequestException('Unable to create event');
+      this.logger.error(error)
+      throw error
     }
 
     return res;
@@ -207,7 +328,7 @@ export class PartyService {
       res = item;
     } catch (e) {
       this.logger.error(e);
-      throw new BadRequestException('Unable to find this party');
+      throw e;
     }
     return res;
   }
@@ -222,8 +343,12 @@ export class PartyService {
 
     try {
       targetParty = await this.findActiveOne(joinDetail.partyId, authPayload);
-      if (compareAsc(targetParty.startDate, new Date()) < 0) {
-        throw new BadRequestException('This Event is our of date');
+      if (compareAsc(parseISO(targetParty.startDate.toString()), new Date()) < 0) {
+        throw new HttpException('This Event is out of date', HttpStatus.CONFLICT);
+      }
+
+      if (targetParty.joined >= targetParty.capacity) {
+        throw new HttpException('This Event is full', HttpStatus.CONFLICT);
       }
 
       if (!targetParty)
@@ -237,7 +362,7 @@ export class PartyService {
       res = await this.repo.save(targetParty);
     } catch (e) {
       this.logger.error(e);
-      throw new BadRequestException('Unable to process join');
+      throw e;
     }
 
     return res;
@@ -258,6 +383,10 @@ export class PartyService {
       if (targetParty.createdBy === authPayload.id)
         throw new BadRequestException('Cannot join self hosted party');
 
+      if (targetParty.joined <= 0) {
+        throw new BadRequestException('This event has no joined members');
+      }
+
       targetParty.joined -= Number(joinDetail.totalGuest);
 
       targetParty.joined = targetParty.joined <= 0 ? 0 : targetParty.joined;
@@ -265,7 +394,7 @@ export class PartyService {
       res = await this.repo.save(targetParty);
     } catch (e) {
       this.logger.error(e);
-      throw new BadRequestException('Unable to process join');
+      throw e;
     }
 
     return res;

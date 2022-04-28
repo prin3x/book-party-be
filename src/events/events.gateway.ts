@@ -1,21 +1,19 @@
 import { Logger } from '@nestjs/common';
 import {
+  ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-  WsResponse,
 } from '@nestjs/websockets';
 import { PartyService } from 'party/party.service';
-import { from, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
   cors: {
-    origin: 'http://localhost:3000',
+    origin: process.env.CLIENT_URL,
     methods: ['GET', 'POST'],
     transports: ['websocket', 'polling'],
     credentials: true,
@@ -23,25 +21,48 @@ import { Server, Socket } from 'socket.io';
   allowEIO3: true,
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  private logger = new Logger(EventsGateway.name)
-  constructor(private partyService: PartyService){}
+  private logger = new Logger(EventsGateway.name);
+  constructor(private partyService: PartyService) {}
+  private onlineUsers = {};
+
   @WebSocketServer()
   server: Server;
 
   handleDisconnect(client: any) {
+    delete this.onlineUsers[client.handshake.query.userId];
     // console.log('Gateway Disconnect...');
   }
   handleConnection(client: Socket, query) {
-    // this.logger.verbose('Connecting...')
-  }
+    this.logger.verbose(
+      'Connecting...',
+      client.id,
+      'userId :',
+      client.handshake.query.userId,
+    );
 
-  @SubscribeMessage('clientEvent')
-  findAll(@MessageBody() data: any): WsResponse<string> {
-    return { event: 'msgtoServer', data: 'RTers' };
+    let newUser = {
+      [client.handshake.query.userId.toString()]: client.id,
+    };
+
+    this.onlineUsers = {...this.onlineUsers, ...newUser}
+
+    this.logger.debug(this.onlineUsers)
+
   }
 
   @SubscribeMessage('userJoinParty')
-  async identity(@MessageBody() data: number): Promise<number> {
+  async onJoinParty(
+    @MessageBody() data: any,
+    @ConnectedSocket() client: Socket,
+  ): Promise<number> {
+    this.logger.log(data);
+
+    this.logger.debug(this.onlineUsers[data.creatorId.toString()]);
+
+    client
+      .to(this.onlineUsers[data.creatorId.toString()])
+      .emit('userJoinYourParty', data.partyId);
+
     return data;
   }
 }

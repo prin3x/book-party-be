@@ -7,7 +7,11 @@ import {
   INotificationOperation,
   NotificationQueryParamsDTO,
 } from './dto/find-notication.dto';
-import { Notification, NOTI_TABLE } from './entities/notification.entity';
+import {
+  ENotificationStatus,
+  Notification,
+  NOTI_TABLE,
+} from './entities/notification.entity';
 
 @Injectable()
 export class NotificationService {
@@ -31,11 +35,31 @@ export class NotificationService {
     try {
       res = await this.repo.save(noti);
     } catch (e) {
-      this.logger.error(e);
-      throw new BadRequestException(e);
+      this.logger.error(e)
+      throw e;
     }
 
     return res;
+  }
+
+  async updateSeen(authPayload: IAuthPayload) {
+    this.logger.verbose(
+      `fn => ${this.updateSeen.name}, auth : ${authPayload.id}`,
+    );
+    const query = this.repo
+      .createQueryBuilder(NOTI_TABLE)
+      .update(Notification)
+      .set({ status: ENotificationStatus.SEEN })
+      .where('for = :id', { id: authPayload.id })
+      .andWhere('status LIKE :status', {
+        status: `${ENotificationStatus.UNSEEN}`,
+      });
+    try {
+      await query.execute();
+    } catch (e) {
+      this.logger.error(e)
+      throw e;
+    }
   }
 
   async findAll(
@@ -49,7 +73,7 @@ export class NotificationService {
         .createQueryBuilder(NOTI_TABLE)
         .where(`${NOTI_TABLE}.for Like :userId`, {
           userId: `${authPayload.id}`,
-        });
+        })
 
       if (opt.type) {
         query.andWhere(`${NOTI_TABLE}.type Like :type`, {
@@ -62,8 +86,8 @@ export class NotificationService {
 
       res = await query.getMany();
     } catch (error) {
-      this.logger.error(error);
-      throw new BadRequestException('Error Query');
+      this.logger.error(error)
+      throw error
     }
 
     return res;

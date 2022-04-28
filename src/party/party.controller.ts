@@ -45,6 +45,24 @@ export class PartyController {
     return await this.partyService.findAll(queryObj, authPayload);
   }
 
+  @Get('/joined')
+  async findJoinedParty(
+    @Query() q: PartyQueryParamsDTO,
+    @AuthPayload() authPayload: IAuthPayload,
+  ) {
+    const queryObj = this.partyService.parseQueryString(q);
+    return await this.partyService.findJoinedParty(queryObj, authPayload);
+  }
+
+  @Get('/owned')
+  async findOwnedParty(
+    @Query() q: PartyQueryParamsDTO,
+    @AuthPayload() authPayload: IAuthPayload,
+  ) {
+    const queryObj = this.partyService.parseQueryString(q);
+    return await this.partyService.findOwnedParty(queryObj, authPayload);
+  }
+
   @Post('/create')
   @UseInterceptors(FileInterceptor('image'))
   async createParty(

@@ -7,8 +7,10 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { UserService } from 'user/user.service';
 import * as bcrypt from 'bcrypt';
+import { RegisterUserDTO } from './dto/register-user.dto';
+import { LoginUserDTO } from './dto/login-user.dto';
+import { UserService } from 'user/user.service';
 
 @Injectable()
 export class AuthService {
@@ -19,16 +21,7 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
-  async validateUser(id): Promise<any> {
-    const user = await this.userService.findOne(id);
-    if (user) {
-      //   const { ...result } = user;
-      //   return result;
-    }
-    return null;
-  }
-
-  async register(user: any) {
+  async register(user: RegisterUserDTO) {
     let payload;
     try {
       const existingUsername = await this.userService.findOneByUsername(
@@ -39,13 +32,13 @@ export class AuthService {
 
       payload = await this.userService.create(user);
     } catch (e) {
-      this.logger.error(e);
-      throw new UnauthorizedException('Unable to register');
+      this.logger.error(e)
+      throw e;
     }
     return { access_token: payload };
   }
 
-  async login(user: any) {
+  async login(user: LoginUserDTO) {
     let payload: any;
     let accessToken: string;
     this.logger.log(`fn => ${this.login.name} username: ${user.username}`);
@@ -74,8 +67,8 @@ export class AuthService {
         });
       }
     } catch (e) {
-      this.logger.error(e);
-      throw new UnauthorizedException('Unable to login');
+      this.logger.error(e)
+      throw e;
     }
 
     return {

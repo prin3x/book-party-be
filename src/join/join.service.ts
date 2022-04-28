@@ -60,8 +60,8 @@ export class JoinService {
 
       res = await this.repo.save(set);
     } catch (e) {
-      this.logger.error(e);
-      throw new BadRequestException(e);
+      this.logger.error(e)
+      throw e;
     }
 
     return res;
@@ -94,8 +94,8 @@ export class JoinService {
 
       res = await this.repo.save(targetJoin);
     } catch (e) {
-      this.logger.error(e);
-      throw new BadRequestException(e);
+      this.logger.error(e)
+      throw e;
     }
 
     return res;
